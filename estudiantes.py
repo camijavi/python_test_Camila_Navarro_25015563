@@ -6,7 +6,9 @@
 #     "proyecto": 95.0
 # }
 
-estudiante = {
+from typing import Optional, List, Dict, Any
+
+estudiante: Dict[str, Any] = {
     "carnet": "",
     "nombre": "",
     "parcial1": 0.0,
@@ -14,10 +16,10 @@ estudiante = {
     "proyecto": 0.0
 }
 
-estudiantes = []
+estudiantes: List[Dict[str, Any]] = []
 
 
-def  carnet_repetido(estudiantes, carnet: str):
+def carnet_repetido(estudiantes: list, carnet: str) -> bool:
     if buscar_estudiante(estudiantes, carnet) is not None:
         print(f"Error: El carnet '{carnet}' ya está registrado. No se puede repetir.")
         return True
@@ -25,7 +27,14 @@ def  carnet_repetido(estudiantes, carnet: str):
 
 
 
-def agregar_estudiante(estudiantes, carnet=None, nombre=None, parcial1=None, parical2=None, proyecto=None):
+def agregar_estudiante(
+    estudiantes: list,
+    carnet: Optional[str] = None,
+    nombre: Optional[str] = None,
+    parcial1: Optional[float] = None,
+    parical2: Optional[float] = None,
+    proyecto: Optional[float] = None
+) -> bool:
     # Agrega un diccionario con esos campos, utilizando .copy(). No registres dos veces el mismo carnet.
 
     if carnet is None:
@@ -52,7 +61,7 @@ def agregar_estudiante(estudiantes, carnet=None, nombre=None, parcial1=None, par
     estudiantes.append(nuevo_estudiante.copy())
     return True
 
-def buscar_estudiante(estudiantes, carnet: str = None):
+def buscar_estudiante(estudiantes: list, carnet: Optional[str] = None) -> Optional[int]:
     # Recorre la lista mediante índices y devuelve la posición encontrada; si no existe, devuelve None.
     # se busca por carnet
     if carnet is None and isinstance(estudiantes, str):
@@ -66,7 +75,12 @@ def buscar_estudiante(estudiantes, carnet: str = None):
             break
     return index
 
-def actualizar_calificacion(estudiantes, carnet: str, campo: int = None, nota: float = None):
+def actualizar_calificacion(
+    estudiantes: list,
+    carnet: str,
+    campo: Optional[int] = None,
+    nota: Optional[float] = None
+) -> bool:
     # Permite modificar parcial1, parcial2 o proyecto. Devuelve True si actualiza y False si el carnet no existe, el campo no es válido o la nota está fuera de rango.
     index = buscar_estudiante(estudiantes, carnet)
     if index is None:
@@ -99,7 +113,7 @@ def actualizar_calificacion(estudiantes, carnet: str, campo: int = None, nota: f
     print(f"Calificación de {campo_nombre} actualizada exitosamente a {nota}.")
     return True
 
-def eliminar_estudiante(estudiantes, carnet: str):
+def eliminar_estudiante(estudiantes: list, carnet: str) -> bool:
     # Utiliza la función de búsqueda para obtener el índice. Elimina con pop() y devuelve True; si no existe, devuelve False.
     index = buscar_estudiante(estudiantes, carnet)
     if index is not None:
@@ -107,31 +121,38 @@ def eliminar_estudiante(estudiantes, carnet: str):
         return True
     return False
 
-def guardar_estudiantes(ruta="estudiantes.txt", estudiantes=None):
+def guardar_estudiantes(ruta: str = "estudiantes.txt", estudiantes: Optional[list] = None) -> None:
     # Escribe los cinco campos de cada diccionario en líneas consecutivas usando open() en modo escritura y cierra el archivo al terminar.
     if estudiantes is None:
         estudiantes = globals().get("estudiantes", [])
     
     archivo = open(ruta, "w", encoding="UTF-8")
-    for est in estudiantes:
+    for i, est in enumerate(estudiantes):
         archivo.write(f"{est['carnet']}\n")
         archivo.write(f"{est['nombre']}\n")
         archivo.write(f"{est['parcial1']}\n")
         archivo.write(f"{est['parcial2']}\n")
         archivo.write(f"{est['proyecto']}\n")
+        # Agrega una línea en blanco de separación entre cada estudiante !importante por motivos visuales (se ve sucio sin el espacio)
+        if i < len(estudiantes) - 1:
+            archivo.write("\n")
     archivo.close()
 
-def cargar_estudiantes(ruta="estudiantes.txt"):
+def cargar_estudiantes(ruta: str = "estudiantes.txt") -> list:
     #  Lee cinco líneas por registro, reconstruye cada diccionario, lo agrega a la lista mediante .copy() y devuelve la lista. Si el archivo no existe, devuelve [].
     global estudiantes
     estudiantes.clear()
     try:
         with open(ruta, "r", encoding="UTF-8") as archivo:
             while True:
-                lineas = [archivo.readline() for _ in range(5)]
-                if not lineas[0]:
+                linea = archivo.readline()
+                # Omitir líneas vacías de separación entre registros
+                while linea and linea.strip() == "":
+                    linea = archivo.readline()
+                if not linea:
                     break
-                campos = [l.rstrip("\n") for l in lineas]
+                
+                campos = [linea.rstrip("\r\n")] + [archivo.readline().rstrip("\r\n") for _ in range(4)]
                 if len(campos) != 5 or any(campo == "" for campo in campos):
                     raise ValueError(f"El archivo {ruta} contiene un registro incompleto")
                 
