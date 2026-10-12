@@ -8,3 +8,18 @@ Luis Pérez
 78.0
 88.0
 91.0
+EST003
+Carlos Mendoza
+85.0
+92.0
+88.0
+EST004
+María Morales
+95.0
+89.0
+94.0
+EST005
+José García
+76.0
+82.0
+80.0

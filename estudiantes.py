@@ -52,9 +52,12 @@ def agregar_estudiante(estudiantes, carnet=None, nombre=None, parcial1=None, par
     estudiantes.append(nuevo_estudiante.copy())
     return True
 
-def buscar_estudiante(estudiantes, carnet: str):
+def buscar_estudiante(estudiantes, carnet: str = None):
     # Recorre la lista mediante índices y devuelve la posición encontrada; si no existe, devuelve None.
     # se busca por carnet
+    if carnet is None and isinstance(estudiantes, str):
+        carnet = estudiantes
+        estudiantes = globals().get("estudiantes", [])
 
     index = None
     for i in range(0, len(estudiantes)):
@@ -63,72 +66,83 @@ def buscar_estudiante(estudiantes, carnet: str):
             break
     return index
 
-def actualizar_calificacion(estudiantes, carnet: str, campo: int, nota: float):
+def actualizar_calificacion(estudiantes, carnet: str, campo: int = None, nota: float = None):
     # Permite modificar parcial1, parcial2 o proyecto. Devuelve True si actualiza y False si el carnet no existe, el campo no es válido o la nota está fuera de rango.
-    accion = False
-    index = buscar_estudiante(carnet)
+    index = buscar_estudiante(estudiantes, carnet)
+    if index is None:
+        print(f"El estudiante con el carnet [ {carnet} ] no existe...")
+        return False
 
-    if index != None:
-        print("ACTUALIZAR ESTUDIANTE")
-        print("1. Nombre ")
-        print("2. Nota Parcial 1 ")
-        print("3. Nota Parcial 2 ")
-        print("4. Nota Proyecto ")
+    if campo is None or nota is None:
+        print("\nACTUALIZAR ESTUDIANTE")
+        print("1. Nota Parcial 1")
+        print("2. Nota Parcial 2")
+        print("3. Nota Proyecto")
+        try:
+            campo = int(input("Selecciona el campo a modificar (1-3): "))
+            nota = float(input("Nueva nota (0 - 100): "))
+        except ValueError:
+            print("Entrada inválida.")
+            return False
 
-        opcion = int(input("Seleccina el campo a modificar"))
+    if nota < 0 or nota > 100:
+        print("La nota está fuera de rango (debe estar entre 0 y 100).")
+        return False
 
-        match opcion: 
-            case 1:
-                estudiantes[index]["parcial1"] = input ("Nueva nota parcial 1: ")
-            case 2:
-                estudiantes[index]["parcial2"] = input ("Nueva nota parcial 2: ")
-            case 3:
-                estudiantes[index]["proyecto"] = input ("Nueva nota proyecto: ")
-            case 4:
-                print("Ninguno de lso campos se ha modificado...")
-        accion = True
-    return accion
+    campos = {1: "parcial1", 2: "parcial2", 3: "proyecto"}
+    if campo not in campos:
+        print("Campo no válido.")
+        return False
+
+    campo_nombre = campos[campo]
+    estudiantes[index][campo_nombre] = float(nota)
+    print(f"Calificación de {campo_nombre} actualizada exitosamente a {nota}.")
+    return True
 
 def eliminar_estudiante(estudiantes, carnet: str):
     # Utiliza la función de búsqueda para obtener el índice. Elimina con pop() y devuelve True; si no existe, devuelve False.
-
-    accion = False
-    index = buscar_estudiante(carnet)
-
-    if index != None:
+    index = buscar_estudiante(estudiantes, carnet)
+    if index is not None:
         estudiantes.pop(index)
-        accion = True
-    return accion
+        return True
+    return False
 
-def guardar_estudiantes(ruta, estudiantes):
+def guardar_estudiantes(ruta="estudiantes.txt", estudiantes=None):
     # Escribe los cinco campos de cada diccionario en líneas consecutivas usando open() en modo escritura y cierra el archivo al terminar.
+    if estudiantes is None:
+        estudiantes = globals().get("estudiantes", [])
     
-    archivo = open("estudiantes.txt", "a", encoding="UTF-8")
+    archivo = open(ruta, "w", encoding="UTF-8")
     for est in estudiantes:
-        archivo.write(est["carnet"])
-        archivo.write(est["nombre"])
-        archivo.write(est[str(est["parcial1"])])
-        archivo.write(est[str(est["parcial2"])])
-        archivo.write(est[str(est["proyecto"])])
+        archivo.write(f"{est['carnet']}\n")
+        archivo.write(f"{est['nombre']}\n")
+        archivo.write(f"{est['parcial1']}\n")
+        archivo.write(f"{est['parcial2']}\n")
+        archivo.write(f"{est['proyecto']}\n")
     archivo.close()
 
-def cargar_estudiantes(ruta):
+def cargar_estudiantes(ruta="estudiantes.txt"):
     #  Lee cinco líneas por registro, reconstruye cada diccionario, lo agrega a la lista mediante .copy() y devuelve la lista. Si el archivo no existe, devuelve [].
-
-    cantidadRegistrada = 0
-    with open("estudiantes.txt", "a", encoding="UTF-8") as archivo:
-        while True:
-            campos = [archivo.readline().rstrip("\n") for _ in range(5)]
-            if not campos[0]:
-                break
-            if len(campos) != 5 or any(campo == "" for campo in campos):
-                raise ValueError("El archivo estuddiantes.txt contiene un registro incompleto")
-            
-            estudiantes.append({
-                "carnet": campos[0],
-                "nombre": campos[1],
-                "parcial1": float(campos[2]),
-                "parcial2": float(campos[3]),
-                "proyecto": float(campos[4])
-            })
-    return cantidadRegistrada
+    global estudiantes
+    estudiantes.clear()
+    try:
+        with open(ruta, "r", encoding="UTF-8") as archivo:
+            while True:
+                lineas = [archivo.readline() for _ in range(5)]
+                if not lineas[0]:
+                    break
+                campos = [l.rstrip("\n") for l in lineas]
+                if len(campos) != 5 or any(campo == "" for campo in campos):
+                    raise ValueError(f"El archivo {ruta} contiene un registro incompleto")
+                
+                est = {
+                    "carnet": campos[0],
+                    "nombre": campos[1],
+                    "parcial1": float(campos[2]),
+                    "parcial2": float(campos[3]),
+                    "proyecto": float(campos[4])
+                }
+                estudiantes.append(est.copy())
+    except FileNotFoundError:
+        return []
+    return estudiantes
